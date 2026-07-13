@@ -44,13 +44,19 @@ checklist at the bottom passes.
 - **On screen:** the finalized invoice PDF in Qonto — zoom the footer showing
   `SHA-256: … | doc never uploaded`.
 - **Say:** "Finalized, real invoice number, and the cryptographic proof is
-  rendered right in the footer. Then it's sent from Qonto to the client."
+  rendered right in the footer. Don't trust me — verify it."
+- **On screen:** terminal —
+  `scripts/verify-proof.sh quote.pdf invoice.pdf` → green `✔ PROOF VERIFIED`.
+- **Say:** "One offline script: the invoice provably references the exact PDF
+  on my laptop. Then it's sent from Qonto to the client."
 - **On screen:** the sent confirmation.
 
 ### 2:40–3:00 · Close
 - **Say:** "From a messy call to a payable, provable invoice — two confirmation
-  gates, and the document never left the machine. Only the hash traveled."
-- **On screen:** end card: `meet2invoice · github.com/qonto/skills`
+  gates, and the document never left the machine. Only the hash traveled.
+  meet2invoice makes EU freelance deals fluent."
+- **On screen:** end card:
+  `meet2invoice — EU freelance deals, fluent. · github.com/qonto/skills`
 
 ---
 
@@ -73,5 +79,7 @@ checklist at the bottom passes.
       avoids the 422 `tin_number` stall on `create_quote`.
 - [ ] One full dry run with `demo/transcript.md`, **timed under 3:00**.
 - [ ] Confirm the proof string renders in the finalized invoice PDF footer.
+- [ ] Run `scripts/verify-proof.sh <quote.pdf> <invoice.pdf>` against the dry-run
+      PDFs — must print green `✔ PROOF VERIFIED` before recording.
 - [ ] Screen-recording tool set to capture both Claude Code and the Qonto tab.
 - [ ] Mic check; close noisy apps/notifications.
