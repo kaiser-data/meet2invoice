@@ -2,6 +2,10 @@
 
 **A sales call becomes a provable Qonto invoice — the document never leaves your machine.**
 
+> Built for the [Qonto × Anthropic MCP Hackathon](https://luma.com/497kgbv7) —
+> submitted as [qonto/skills#54](https://github.com/qonto/skills/pull/54).
+> This repo is the standalone/portfolio copy.
+
 A [Claude Code](https://claude.com/claude-code) skill on the official Qonto MCP.
 Feed it a meeting artifact — a call transcript, notes, a calendar event, in any
 of five languages — and it extracts the deal, previews it for your approval,
