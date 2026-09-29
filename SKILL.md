@@ -1,8 +1,15 @@
 ---
 name: meet2invoice
 description: "Turn a sales meeting artifact (transcript, notes, calendar event) into money movement in Qonto: extract the deal, preview it, create the quote, hash the authoritative PDF locally (SHA-256), and on acceptance create + finalize the invoice with an offline-verifiable proof injected into its terms — then send it from Qonto. The document never leaves your machine; only the hash travels."
-when-to-use: "Use after a sales call or when meeting notes contain an agreed deal: 'turn this transcript into a quote', 'they accepted — invoice them', 'meet2invoice these notes', 'close the loop with proof in Qonto'. Also for escalating an existing Qonto quote to a proven, sent invoice."
-argument-hint: "[meeting transcript/notes + client hints, or an existing Qonto quote ID + 'accepted']"
+metadata:
+  when-to-use: "Use after a sales call or when meeting notes contain an agreed deal: 'turn this transcript into a quote', 'they accepted — invoice them', 'meet2invoice these notes', 'close the loop with proof in Qonto'. Also for escalating an existing Qonto quote to a proven, sent invoice."
+  argument-hint: "[meeting transcript/notes + client hints, or an existing Qonto quote ID + 'accepted']"
+permissions:
+  mcp:
+    qonto: [change_client_invoice_status, create_client, create_client_invoice, create_credit_note, create_payment_link, create_quote, get_attachment, get_client_invoice, get_organization, get_payment_link, get_quote, list_clients, send_client_invoice, update_client]
+  network: []
+  env: []
+  tools: [Read, Bash]
 ---
 
 # Meet2Invoice
@@ -14,7 +21,7 @@ into a payable, provable Qonto invoice.
 
 **Core promise:** the agreed deal leaves the meeting and becomes a payable,
 provable Qonto invoice. The quote/invoice PDF is downloaded and hashed
-**locally**; only the SHA-256 (plus optional signature metadata) is written
+**locally**; only the SHA-256 is written
 back into Qonto, visible on the final invoice PDF.
 
 ## How the Proof Works
@@ -64,8 +71,11 @@ back into Qonto, visible on the final invoice PDF.
    `shasum -a 256` (or `sha256sum` on Linux). No PDF is sent to any third
    party by this skill.
 6. **Proof lives in `terms_and_conditions`** of the invoice (≤525 chars):
-   `Signed proof: <verify-url or ref> | SHA-256: <hex> | Signers: <n/m> | Cert: <ref>`.
+   `Hash proof | SHA-256: <hex> | Anchor: Qonto Quote <number> | Verify: scripts/verify-proof.sh quote.pdf invoice.pdf`.
    It renders in the footer of the official Qonto invoice PDF (verified).
+   This is tamper-evidence between the two parties who hold the quote, not a
+   digital signature: it proves which document the invoice refers to, not who
+   approved it. Never label it "signed", "certified" or a "signature".
 7. **No payments, no transfers.** This skill never moves money. Payment links
    are an optional post-step and only in accounts with a connected payment
    provider (sandbox orgs have none — expect 400 "connection with the
@@ -151,20 +161,13 @@ Notes proven against the live API:
 Download the PDF locally, compute `shasum -a 256`. This hash is the anchor
 for everything that follows.
 
-### Step 3 — (Optional) Collect signatures via a second MCP
+### Step 3 — Say what the proof is
 
-If a signature MCP is available: send **only the hash + signer list**, let
-signers approve on their devices, receive back a proof bundle
-(signatures + cert reference). If none is available, the proof is the
-locally computed hash alone — say so honestly in the output.
-
-This repo ships a reference implementation: `sign-ring/server.py`, a
-zero-dependency MCP server (register with
-`claude mcp add sign-ring -- python3 <path>/sign-ring/server.py`).
-Tools: `start_signature_ring(document_name, sha256, signers)` → one
-signing URL per signer served on the LAN (signers tap on their phones),
-`check_ring_status()`, `get_signature_proof()` → ready-to-inject
-proof string (≤525 chars, live-tested at 223).
+Tell the user plainly: the proof is the locally computed hash of the quote
+PDF. Anyone holding both PDFs can check it offline with
+`scripts/verify-proof.sh`. It does not identify who approved the deal; if the
+user needs a real countersignature, that is a separate step outside this
+skill (e.g. a qualified e-signature service).
 
 ### Step 4 — On acceptance: invoice with injected proof
 
@@ -227,7 +230,7 @@ the flow runs unchanged on a production account. Differences to expect:
   a different account.
 - **Currency.** Invoice currency must equal the client's `currency`; for a
   non-EUR deal set it correctly at client creation, don't default to EUR.
-- **Anchor immutability.** Never `update_quote` after hashing — any change
+- **Anchor immutability.** Never update the quote after hashing — any change
   invalidates the proof. If the quote must change, re-hash and re-inject.
 - **Manual numbering orgs.** If auto-numbering is disabled, `create_quote` /
   `create_client_invoice` fail without `number` — ask the user for the next
